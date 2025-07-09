@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eagle RTO Payment Calculator</title>
+    <!-- Tailwind CSS CDN for easy styling and responsiveness -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for better visual appeal and mobile experience */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Full viewport height */
+            padding: 1rem; /* Padding around the content */
+        }
+        .calculator-card {
+            background-color: #ffffff; /* White card background */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Soft shadow */
+            border-radius: 1.5rem; /* More rounded corners */
+            padding: 2rem;
+            max-width: 450px; /* Max width for desktop, fluid on mobile */
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem; /* Space between sections */
+        }
+        .input-group label {
+            font-weight: 600; /* Semi-bold labels */
+            color: #333;
+            margin-bottom: 0.5rem;
+            display: block; /* Make label take full width */
+        }
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db; /* Light gray border */
+            border-radius: 0.75rem; /* Rounded input fields */
+            font-size: 1rem;
+            color: #333;
+            background-color: #f9fafb; /* Slightly off-white input background */
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #3b82f6; /* Blue border on focus */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25); /* Light blue shadow on focus */
+        }
+        .result-display {
+            background-color: #e0f2fe; /* Light blue background for result */
+            color: #0c4a6e; /* Darker blue text */
+            font-size: 1.75rem; /* Larger font for result */
+            font-weight: 700; /* Bold result */
+            padding: 1rem 1.5rem;
+            border-radius: 1rem;
+            text-align: center;
+            margin-top: 1rem;
+            word-break: break-all; /* Ensure long numbers don't overflow */
+        }
+        .info-box {
+            background-color: #fffbeb; /* Light yellow for info */
+            border-left: 4px solid #f59e0b; /* Orange left border */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem; /* Smaller font for info */
+            color: #78350f; /* Dark brown text */
+        }
+        .error-message {
+            color: #dc2626; /* Red text for errors */
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="calculator-card">
+        <h1 class="text-3xl font-bold text-center text-blue-800 mb-4">Eagle RTO Payment Calculator</h1>
+
+        <!-- Balance Due Input -->
+        <div class="input-group">
+            <label for="balanceDue" class="block text-gray-700">Balance Due ($)</label>
+            <input
+                type="number"
+                id="balanceDue"
+                min="0"
+                step="0.01"
+                value="3373.50"
+                class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                placeholder="e.g., 3373.50"
+            >
+            <p id="balanceDueError" class="error-message hidden">Please enter a valid amount between $3,000 and $25,000.</p>
+            <p class="text-sm text-gray-500 mt-1">This is the amount the customer owes after the down payment.</p>
+        </div>
+
+        <!-- Term Length Dropdown -->
+        <div class="input-group">
+            <label for="termLength" class="block text-gray-700">Term Length</label>
+            <select
+                id="termLength"
+                class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+            >
+                <option value="24">24 Months</option>
+                <option value="36">36 Months</option>
+                <option value="48">48 Months</option>
+                <option value="60" selected>60 Months</option>
+            </select>
+            <p class="text-sm text-gray-500 mt-1">Select the appropriate term length.</p>
+        </div>
+
+        <!-- Estimated Monthly Payment Display -->
+        <div class="mt-4">
+            <p class="text-lg font-semibold text-gray-800 text-center">Estimated Monthly Payment:</p>
+            <div id="monthlyPayment" class="result-display">
+                $0.00
+            </div>
+            <p class="text-sm text-gray-500 mt-2 text-center">This is the estimated monthly payment amount the customer will owe.</p>
+        </div>
+
+        <!-- Important Notes Section -->
+        <div class="info-box mt-4">
+            <h3 class="font-bold text-orange-800 mb-2">Important Notes:</h3>
+            <ul class="list-disc list-inside text-orange-700 space-y-1">
+                <li>Minimum financed amount: $3,000</li>
+                <li>Maximum financed amount: $25,000</li>
+                <li>**Origination Fee:** This calculator does NOT include the origination fee. This is a non-refundable fee paid to Heartland for processing the contract without a credit check, and it will automatically populate when the term is chosen.</li>
+                <li>**Labor Charges:** Labor charges are NOT financed and must be paid at the time of installation.</li>
+                <li>**LDW (Loss Damage Waiver):** Must be checked "Accept" or "Do Not Accept", initialed and explained to the customer.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Get references to the HTML elements
+        const balanceDueInput = document.getElementById('balanceDue');
+        const termLengthSelect = document.getElementById('termLength');
+        const monthlyPaymentDisplay = document.getElementById('monthlyPayment');
+        const balanceDueError = document.getElementById('balanceDueError');
+
+        // Define the divisor rates based on your company's program
+        const divisorRates = {
+            24: 14.4,
+            36: 19.8,
+            48: 21.6,
+            60: 24
+        };
+
+        // Function to calculate and display the monthly payment
+        function calculatePayment() {
+            let balanceDue = parseFloat(balanceDueInput.value);
+            const termLength = parseInt(termLengthSelect.value);
+            const divisor = divisorRates[termLength];
+
+            // Input validation based on RTO program rules
+            if (isNaN(balanceDue) || balanceDue < 3000 || balanceDue > 25000) {
+                monthlyPaymentDisplay.textContent = '$0.00';
+                balanceDueError.classList.remove('hidden'); // Show error message
+                return; // Stop calculation if input is invalid
+            } else {
+                balanceDueError.classList.add('hidden'); // Hide error message if valid
+            }
+
+            // Perform the calculation
+            if (divisor) {
+                const monthlyPayment = balanceDue / divisor;
+                monthlyPaymentDisplay.textContent = `$${monthlyPayment.toFixed(2)}`;
+            } else {
+                monthlyPaymentDisplay.textContent = 'Error: Invalid Term';
+            }
+        }
+
+        // Add event listeners to trigger calculation on input change
+        balanceDueInput.addEventListener('input', calculatePayment);
+        termLengthSelect.addEventListener('change', calculatePayment); // 'change' is better for select elements
+
+        // Initial calculation when the page loads
+        calculatePayment();
+    </script>
+</body>
+</html>
